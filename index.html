@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الأساتذة - OBAA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- مكتبات Firebase الإصدار 8 الموثوقة -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { background: #fff3eb; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 15px; }
+        .card { background: #ffffff; width: 100%; max-width: 450px; border-radius: 20px; box-shadow: 0 10px 25px rgba(255, 107, 0, 0.15); padding: 20px; }
+        .header { background: linear-gradient(135deg, #ff8c00, #ff5500); color: white; padding: 12px; border-radius: 12px; text-align: center; font-size: 20px; font-weight: 900; margin-bottom: 15px; }
+        .input-group { margin-bottom: 12px; text-align: right; }
+        label { display: block; font-size: 13px; font-weight: 700; color: #444; margin-bottom: 4px; }
+        input { width: 100%; padding: 12px; border: 2px solid #ffe0cc; border-radius: 10px; font-size: 15px; font-weight: 700; text-align: right; outline: none; background: #fffaf7; }
+        input:focus { border-color: #ff6b00; }
+        .btn-search { width: 100%; padding: 12px; background: #ff6b00; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer; margin-bottom: 15px; }
+        .subject-box { background: #fffaf7; border: 1px solid #ffe0cc; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+        .subject-title { font-size: 14px; font-weight: 800; color: #d9534f; margin-bottom: 6px; border-bottom: 1px dashed #ffd8c2; padding-bottom: 4px; }
+        .grade-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 13px; font-weight: 700; }
+        .grade-row input { width: 90px; padding: 6px; text-align: center; font-size: 13px; }
+        .action-btns { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-save { flex: 2; padding: 12px; background: #28a745; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer; }
+        .btn-delete { flex: 1; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer; }
+        .alert { padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 700; text-align: center; margin-bottom: 10px; display: none; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="header">OBAA - لوحة الأساتذة</div>
+        <div id="alertBox" class="alert"></div>
+
+        <div class="input-group">
+            <label>كود الطالب (للبحث أو الإضافة أو التعديل):</label>
+            <input type="text" id="searchCode" placeholder="مثال: OBAA1234">
+        </div>
+
+        <button class="btn-search" onclick="searchStudent()">بحث عن الطالب 🔍</button>
+
+        <div class="input-group">
+            <label>اسم الطالب الكامل:</label>
+            <input type="text" id="studentName">
+        </div>
+
+        <div class="input-group">
+            <label>الصف الدراسي:</label>
+            <input type="text" id="studentGrade" value="الثامن الأساسي">
+        </div>
+
+        <div id="subjectsContainer"></div>
+
+        <div class="action-btns">
+            <button class="btn-save" onclick="saveData()">حفظ / تعديل 💾</button>
+            <button class="btn-delete" onclick="deleteData()">حذف 🗑️</button>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ استبدل هذه الإعدادات بإعدادات مشروعك الحقيقي من لوحة تحكم Firebase ⚠️
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        // الـ 13 مادة كاملة
+        const subjects = [
+            "اللغة العربية", "الديانة الإسلامية", "اللغة الإنكليزية", "اللغة الفرنسية",
+            "الرياضيات", "العلوم", "الفيزياء والكيمياء", "التاريخ", "الجغرافيا",
+            "التربية الوطنية", "التكنولوجيا", "التربية الفنية", "التربية الموسيقية"
+        ];
+
+        function renderSubjects() {
+            const container = document.getElementById('subjectsContainer');
+            container.innerHTML = '';
+            subjects.forEach((sub, index) => {
+                container.innerHTML += `
+                    <div class="subject-box">
+                        <div class="subject-title">${index + 1}. ${sub}</div>
+                        <div class="grade-row"><span>سبر:</span><input type="number" id="sub_${index}_sabr"></div>
+                        <div class="grade-row"><span>مذاكرة:</span><input type="number" id="sub_${index}_quiz"></div>
+                        <div class="grade-row"><span>فحص:</span><input type="number" id="sub_${index}_exam"></div>
+                    </div>
+                `;
+            });
+        }
+
+        function searchStudent() {
+            const code = document.getElementById('searchCode').value.trim();
+            if (!code) { showAlert('أدخل كود الطالب أولاً.', 'error'); return; }
+
+            db.ref('students/' + code).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('studentName').value = data.name || '';
+                    document.getElementById('studentGrade').value = data.grade || 'الثامن الأساسي';
+                    if (data.subjects) {
+                        data.subjects.forEach((s, index) => {
+                            if(document.getElementById(`sub_${index}_sabr`)) document.getElementById(`sub_${index}_sabr`).value = s.sabr || '';
+                            if(document.getElementById(`sub_${index}_quiz`)) document.getElementById(`sub_${index}_quiz`).value = s.quiz || '';
+                            if(document.getElementById(`sub_${index}_exam`)) document.getElementById(`sub_${index}_exam`).value = s.exam || '';
+                        });
+                    }
+                    showAlert('تم جلب بيانات الطالب بنجاح!', 'success');
+                } else {
+                    showAlert('الطالب غير موجود، يمكنك إدخال بياناته الجديدة.', 'error');
+                    document.getElementById('studentName').value = '';
+                    subjects.forEach((_, index) => {
+                        document.getElementById(`sub_${index}_sabr`).value = '';
+                        document.getElementById(`sub_${index}_quiz`).value = '';
+                        document.getElementById(`sub_${index}_exam`).value = '';
+                    });
+                }
+            }).catch(() => {
+                showAlert('خطأ في الاتصال بقاعدة البيانات.', 'error');
+            });
+        }
+
+        function saveData() {
+            const code = document.getElementById('searchCode').value.trim();
+            const name = document.getElementById('studentName').value.trim();
+            const grade = document.getElementById('studentGrade').value.trim();
+
+            if (!code || !name) { showAlert('أدخل الكود واسم الطالب على الأقل.', 'error'); return; }
+
+            let subsData = [];
+            subjects.forEach((subName, index) => {
+                subsData.push({
+                    name: subName,
+                    sabr: document.getElementById(`sub_${index}_sabr`).value || '',
+                    quiz: document.getElementById(`sub_${index}_quiz`).value || '',
+                    exam: document.getElementById(`sub_${index}_exam`).value || ''
+                });
+            });
+
+            db.ref('students/' + code).set({
+                name: name,
+                grade: grade,
+                subjects: subsData
+            }, (error) => {
+                if (error) {
+                    showAlert('خطأ في الحفظ: ' + error.message, 'error');
+                } else {
+                    showAlert('تم الحفظ والتحديث بنجاح تام! 🚀', 'success');
+                }
+            });
+        }
+
+        function deleteData() {
+            const code = document.getElementById('searchCode').value.trim();
+            if (!code) { showAlert('أدخل كود الطالب للحذف.', 'error'); return; }
+
+            if (confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
+                db.ref('students/' + code).remove().then(() => {
+                    showAlert('تم الحذف بنجاح.', 'success');
+                    document.getElementById('searchCode').value = '';
+                    document.getElementById('studentName').value = '';
+                    renderSubjects();
+                });
+            }
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alertBox');
+            box.className = `alert alert-${type}`;
+            box.textContent = msg;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 3000);
+        }
+
+        renderSubjects();
+    </script>
+</body>
+</html>
