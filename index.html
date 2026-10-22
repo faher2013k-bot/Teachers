@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم الأساتذة - OBAA</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <!-- مكتبات Firebase الإصدار 8 الموثوقة -->
+    <!-- مكتبات Firebase 8 المتوافقة تماماً مع الكود -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -63,15 +63,15 @@
     </div>
 
     <script>
-        // ⚠️ استبدل هذه الإعدادات بإعدادات مشروعك الحقيقي من لوحة تحكم Firebase ⚠️
+        // إعدادات Firebase الحقيقية لمشروعك obaa-ae096
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyDgjU6E0PIRDvKDRPlcQsubjX_STZYIEYs",
+            authDomain: "obaa-ae096.firebaseapp.com",
+            databaseURL: "https://obaa-ae096-default-rtdb.firebaseio.com",
+            projectId: "obaa-ae096",
+            storageBucket: "obaa-ae096.appspot.com",
+            messagingSenderId: "855364863484",
+            appId: "1:855364863484:web:2c63bc622ca9b7f626c779"
         };
 
         if (!firebase.apps.length) {
@@ -117,7 +117,7 @@
                             if(document.getElementById(`sub_${index}_exam`)) document.getElementById(`sub_${index}_exam`).value = s.exam || '';
                         });
                     }
-                    showAlert('تم جلب بيانات الطالب بنجاح!', 'success');
+                    showAlert('تم جلب بيانات الطالب بنجاح! 🎯', 'success');
                 } else {
                     showAlert('الطالب غير موجود، يمكنك إدخال بياناته الجديدة.', 'error');
                     document.getElementById('studentName').value = '';
@@ -155,9 +155,9 @@
                 subjects: subsData
             }, (error) => {
                 if (error) {
-                    showAlert('خطأ في الحفظ: ' + error.message, 'error');
+                    showAlert('فشل الحفظ: ' + error.message, 'error');
                 } else {
-                    showAlert('تم الحفظ والتحديث بنجاح تام! 🚀', 'success');
+                    showAlert('تم الحفظ والتحديث في Firebase بنجاح! 🚀', 'success');
                 }
             });
         }
